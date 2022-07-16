@@ -1,4 +1,4 @@
-module github.com/shiiba-t/go-roguelike.git
+module github.com/shiiba-t/go-roguelike
 
 go 1.18
 
