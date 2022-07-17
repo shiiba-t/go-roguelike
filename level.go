@@ -24,8 +24,6 @@ type Level struct {
 
 func NewLevel() Level {
 	l := Level{}
-	tiles := l.createTiles()
-	l.Tiles = tiles
 	rooms := make([]Rect, 0)
 	l.Rooms = rooms
 	l.GenerateLevelTiles()
@@ -78,6 +76,7 @@ func (level *Level) createRoom(room Rect) {
 	}
 }
 
+//GenerateLevelTiles creates a new Dungeon Level Map.
 func (level *Level) GenerateLevelTiles() {
 	MIN_SIZE := 6
 	MAX_SIZE := 10
@@ -86,14 +85,15 @@ func (level *Level) GenerateLevelTiles() {
 	gd := NewGameData()
 	tiles := level.createTiles()
 	level.Tiles = tiles
+	contains_rooms := false
 
 	for idx := 0; idx < MAX_ROOMS; idx++ {
-		w := GetRandamBetween(MIN_SIZE, MAX_SIZE)
-		h := GetRandamBetween(MIN_SIZE, MAX_SIZE)
-		x := GetDiceRoll(gd.ScreenWidth-w-1) - 1
-		y := GetDiceRoll(gd.ScreenHeight-h-1) - 1
-
+		w := GetRandomBetween(MIN_SIZE, MAX_SIZE)
+		h := GetRandomBetween(MIN_SIZE, MAX_SIZE)
+		x := GetDiceRoll(gd.ScreenWidth - w - 1)
+		y := GetDiceRoll(gd.ScreenHeight - h - 1)
 		new_room := NewRect(x, y, w, h)
+
 		okToAdd := true
 
 		for _, otherRoom := range level.Rooms {
@@ -104,9 +104,26 @@ func (level *Level) GenerateLevelTiles() {
 		}
 		if okToAdd {
 			level.createRoom(new_room)
+			if contains_rooms {
+				newX, newY := new_room.Center()
+				prevX, prevY := level.Rooms[len(level.Rooms)-1].Center()
+				coinflip := GetDiceRoll(2)
+				if coinflip == 2 {
+					level.createHorizontalTunnel(prevX, newX, prevY)
+					level.createVerticalTunnel(prevY, newY, newX)
+
+				} else {
+					level.createHorizontalTunnel(prevX, newX, newY)
+					level.createVerticalTunnel(prevY, newY, prevX)
+				}
+
+			}
+
 			level.Rooms = append(level.Rooms, new_room)
+			contains_rooms = true
 		}
 	}
+
 }
 
 func (level *Level) DrawLevel(screen *ebiten.Image) {
@@ -119,4 +136,49 @@ func (level *Level) DrawLevel(screen *ebiten.Image) {
 			screen.DrawImage(tile.Image, op)
 		}
 	}
+}
+
+func (level *Level) createHorizontalTunnel(x1, x2, y int) {
+	gd := NewGameData()
+	for x := min(x1, x2); x < max(x1, x2)+1; x++ {
+		index := level.GetIndexFromXY(x, y)
+		if index > 0 && index < gd.ScreenWidth*gd.ScreenHeight {
+			level.Tiles[index].Blocked = false
+			floor, _, err := ebitenutil.NewImageFromFile("assets/floor.png")
+			if err != nil {
+				log.Fatal(err)
+			}
+			level.Tiles[index].Image = floor
+		}
+	}
+}
+
+func (level *Level) createVerticalTunnel(y1 int, y2 int, x int) {
+	gd := NewGameData()
+	for y := min(y1, y2); y < max(y1, y2)+1; y++ {
+		index := level.GetIndexFromXY(x, y)
+
+		if index > 0 && index < gd.ScreenWidth*gd.ScreenHeight {
+			level.Tiles[index].Blocked = false
+			floor, _, err := ebitenutil.NewImageFromFile("assets/floor.png")
+			if err != nil {
+				log.Fatal(err)
+			}
+			level.Tiles[index].Image = floor
+		}
+	}
+}
+
+func max(x, y int) int {
+	if x < y {
+		return y
+	}
+	return x
+}
+
+func min(x, y int) int {
+	if x > y {
+		return y
+	}
+	return x
 }
