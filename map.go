@@ -2,7 +2,8 @@ package main
 
 //GameMap holds all the level and aggregate information for the entire world.
 type GameMap struct {
-	Dungeons []Dungeon
+	Dungeons     []Dungeon
+	CurrentLevel Level
 }
 
 func NewGameMap() GameMap {
@@ -12,6 +13,6 @@ func NewGameMap() GameMap {
 	d := Dungeon{Name: "default", Levels: levels}
 	dungeons := make([]Dungeon, 0)
 	dungeons = append(dungeons, d)
-	gm := GameMap{Dungeons: dungeons}
+	gm := GameMap{Dungeons: dungeons, CurrentLevel: l}
 	return gm
 }
